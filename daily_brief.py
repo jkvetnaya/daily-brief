@@ -1,6 +1,8 @@
 from openai import OpenAI
 import json
 from dotenv import load_dotenv
+import os
+import requests
 
 load_dotenv()
 
@@ -9,12 +11,34 @@ client = OpenAI()
 
 def get_weather(city):
     """Get the weather for a given city"""
+    base_url = "https://api.openweathermap.org/data/2.5/weather"
+    params = {
+        "q": city,
+        "appid": os.getenv('WEATHER_API_KEY'),
+        "units": "metric"  # Use metric units for temperature
+    }
+    try:
+        response = requests.get(base_url, params=params)
+        weather_data = response.json()
+    except requests.exceptions.RequestException as e:
+        raise Exception(f"Error fetching weather data: {e}")
+        return None
+    if response.status_code != 200:
+        raise Exception(f"Error fetching weather data: {response.status_code}")
+    data = response.json()
+
+    if "main" not in weather_data:
+        raise Exception("Invalid response from weather API")
+    temperature = weather_data["main"]["temp"]
+    weather_description = weather_data["weather"][0]["description"]
+    # Format the weather information
     return json.dumps({
         "city": city,
-        "weather": "sunny",
-        "temperature": "25°C"
+        "weather": weather_description,
+        "temperature": f"{temperature}°C"
     })
     
+
 def get_top_headlines():
     """Get the top headlines"""
     return json.dumps({
@@ -103,6 +127,7 @@ def synthesize_briefing():
             model="gpt-3.5-turbo-1106",
             messages=messages,
         )  # get a new response from the model where it can see the function response
+        return second_response.choices[0].message.content
         return second_response.choices[0].message.content
 
 print(synthesize_briefing())
