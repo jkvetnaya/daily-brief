@@ -41,11 +41,20 @@ def get_weather(city):
 
 def get_top_headlines():
     """Get the top headlines"""
+    api_key = os.getenv('NEWS_API_KEY')
+    url = f"https://newsapi.org/v2/top-headlines?country=us&apiKey={api_key}"
+
+    try:
+        response = requests.get(url)
+        data = response.json()
+    except requests.exceptions.RequestException as e:
+        raise Exception(f"Error fetching news data: {e}")
+        return None
+
     return json.dumps({
         "headlines": [
-            "Local team wins championship",
-            "New technology revolutionizes industry",
-            "Community comes together for charity event"
+            article["title"] for article in data["articles"]
+            if "title" in article   
         ]
     })
 
